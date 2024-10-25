@@ -91,7 +91,7 @@ func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
 		logRecord.Value = kvBuf[keySize:]
 	}
 	// 校验数据的有效性
-	crc := getLogRecordCRC(logRecord, headerBuf[crc32.Size:recordSize])
+	crc := getLogRecordCRC(logRecord, headerBuf[crc32.Size:headerSize])
 	if crc != header.crc {
 		return nil, 0, ErrInvalidCRC
 	}
