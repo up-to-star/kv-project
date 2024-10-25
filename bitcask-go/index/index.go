@@ -24,7 +24,7 @@ const (
 	// Btree 索引
 	Btree IndexType = iota + 1
 
-	// ART 自适应索引
+	// ART 自适应基树索引
 	ART
 )
 

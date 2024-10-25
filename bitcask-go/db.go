@@ -31,7 +31,7 @@ func Open(options Options) (*DB, error) {
 	// 如果文件不存在，则创建文件
 	_, err := os.Stat(options.DirPath)
 	if os.IsNotExist(err) {
-		if err := os.Mkdir(options.DirPath, os.ModePerm); err != nil {
+		if err := os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
 			return nil, err
 		}
 	}
@@ -75,6 +75,35 @@ func (db *DB) Put(key []byte, value []byte) error {
 		return err
 	}
 	if ok := db.index.Put(key, pos); !ok {
+		return ErrIndexUpdateFailed
+	}
+	return nil
+}
+
+func (db *DB) Delete(key []byte) error {
+	if len(key) == 0 {
+		return ErrKeyIsEmpty
+	}
+
+	// 检查 key 是否存在，如果不存在直接返回
+	if pos := db.index.Get(key); pos == nil {
+		return nil
+	}
+
+	// 构造 LogRecord, 标识其是被删除的
+	logRecord := &data.LogRecord{
+		Key:  key,
+		Type: data.LogRecordTypeDelete,
+	}
+
+	_, err := db.appendLogRecord(logRecord)
+	if err != nil {
+		return nil
+	}
+
+	// 从内存索引中将对应的key删除
+	ok := db.index.Delete(key)
+	if !ok {
 		return ErrIndexUpdateFailed
 	}
 	return nil
