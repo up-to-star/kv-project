@@ -48,3 +48,35 @@ func TestBTree_Delete(t *testing.T) {
 	res4 := bt.Delete([]byte("aaa"))
 	assert.True(t, res4)
 }
+
+func TestBTree_Iterator(t *testing.T) {
+	bt1 := NewBTree()
+	iter1 := bt1.Iterator(false)
+	assert.Equal(t, false, iter1.Valid())
+
+	bt1.Put([]byte("cache"), &data.LogRecordPos{Fid: 1, Offset: 0})
+	iter2 := bt1.Iterator(false)
+	assert.Equal(t, true, iter2.Valid())
+	assert.NotNil(t, iter2.Key())
+	assert.NotNil(t, iter2.Value())
+	iter2.Next()
+	assert.Equal(t, false, iter2.Valid())
+
+	bt1.Put([]byte("aaaa"), &data.LogRecordPos{Fid: 1, Offset: 0})
+	bt1.Put([]byte("bbbb"), &data.LogRecordPos{Fid: 1, Offset: 0})
+	bt1.Put([]byte("cccc"), &data.LogRecordPos{Fid: 1, Offset: 0})
+	iter3 := bt1.Iterator(false)
+	for iter3.Rewind(); iter3.Valid(); iter3.Next() {
+		assert.NotNil(t, iter3.Key())
+	}
+
+	iter4 := bt1.Iterator(true)
+	for iter4.Rewind(); iter4.Valid(); iter4.Next() {
+		assert.NotNil(t, iter4.Key())
+	}
+
+	// 测试 Seek
+	iter5 := bt1.Iterator(false)
+	iter5.Seek([]byte("cc"))
+	t.Log(string(iter5.Key()))
+}
