@@ -9,7 +9,8 @@ type LogRecordType = byte
 
 const (
 	LogRecordTypeNormal LogRecordType = iota
-	LogRecordTypeDelete
+	LogRecordTypeDeleted
+	LogRecordTxnFinished
 )
 
 // crc type keySize valueSize
@@ -29,6 +30,11 @@ type logRecordHeader struct {
 	recordType LogRecordType // 标识 LogRecord 的类型
 	keySize    uint32
 	valueSize  uint32
+}
+
+type TransactionRecord struct {
+	Record *LogRecord
+	Pos    *LogRecordPos
 }
 
 // LogRecordPos 数据内存索引，描述数据在磁盘上的位置
