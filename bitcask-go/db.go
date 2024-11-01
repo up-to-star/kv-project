@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type DB struct {
 	oldFiles   map[uint32]*data.DataFile // 旧的数据文件，只能用于读
 	index      index.Indexer             // 内存索引
 	seqNo      uint64                    // 事务序列号, 全局递增
+	isMerging  bool                      // 是不是在merge
 }
 
 // Open 打开 bitcask 存储引擎实例
@@ -45,11 +47,19 @@ func Open(options Options) (*DB, error) {
 		index:    index.NewIndexer(options.IndexType),
 	}
 
+	// 加载 merge 数据目录
+	if err := db.loadMergeFiles(); err != nil {
+		return nil, err
+	}
 	// 加载对应的数据文件
 	if err := db.loadDataFile(); err != nil {
 		return nil, err
 	}
 
+	// 从 hint 索引中加载索引
+	if err := db.loadIndexFromHintFile(); err != nil {
+		return nil, err
+	}
 	// 从数据文件加载索引
 	if err := db.loadIndexFromDataFile(); err != nil {
 		return nil, err
@@ -325,6 +335,16 @@ func (db *DB) loadIndexFromDataFile() error {
 		return nil
 	}
 
+	hasMerged, nonMergeFileId := false, uint32(0)
+	mergedFileName := filepath.Join(db.options.DirPath, data.MergeFinishedFileName)
+	if _, err := os.Stat(mergedFileName); err == nil {
+		fid, err := db.getNonMergeFileId(mergedFileName)
+		if err != nil {
+			return err
+		}
+		hasMerged = true
+		nonMergeFileId = fid
+	}
 	updateIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
 		var ok bool
 		if typ == data.LogRecordTypeDeleted {
@@ -342,6 +362,9 @@ func (db *DB) loadIndexFromDataFile() error {
 	// 遍历文件id，处理文件当中的内容
 	for i, fid := range db.fileIds {
 		fileId := uint32(fid)
+		if hasMerged && fileId < nonMergeFileId {
+			continue
+		}
 		var dataFile *data.DataFile
 		if fileId == db.activeFile.FileId {
 			dataFile = db.activeFile
