@@ -15,6 +15,10 @@ type BTree struct {
 	lock *sync.RWMutex
 }
 
+func (bt *BTree) Close() error {
+	return nil
+}
+
 func (bt *BTree) Iterator(reverse bool) Iterator {
 	if bt.tree == nil {
 		return nil

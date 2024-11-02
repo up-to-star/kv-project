@@ -7,7 +7,7 @@ import (
 
 func main() {
 	opts := bitcask.DefaultOptions
-	opts.DirPath = "/home/cyj/bitcask"
+	opts.DirPath = "/home/cyj/test"
 	db, err := bitcask.Open(opts)
 	if err != nil {
 		panic(err)
