@@ -10,4 +10,5 @@ var (
 	ErrDataDirectoryCorrupt = errors.New("data directory may be corrupted")
 	ErrExceedMaxBatchNum    = errors.New("exceed the max batch num")
 	ErrMergeIsProgress      = errors.New("merge is progress")
+	ErrDatabaseIsUsing      = errors.New("the database directory is using by another process")
 )

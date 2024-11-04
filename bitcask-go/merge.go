@@ -143,7 +143,7 @@ func (db *DB) loadMergeFiles() error {
 	mergePath := db.getMergePath()
 
 	if _, err := os.Stat(mergePath); os.IsNotExist(err) {
-		return err
+		return nil
 	}
 
 	defer func() {
