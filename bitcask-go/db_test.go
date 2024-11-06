@@ -300,7 +300,7 @@ func TestDB_Sync(t *testing.T) {
 
 func TestDB_FileLock(t *testing.T) {
 	opts := DefaultOptions
-	dir, _ := os.MkdirTemp("", "bitcask-go-filelock")
+	dir, _ := os.MkdirTemp("", "bitcask-go-")
 	opts.DirPath = dir
 	opts.DataFileSize = 64 * 1024 * 1024
 	db, err := Open(opts)
@@ -312,5 +312,8 @@ func TestDB_FileLock(t *testing.T) {
 	assert.Equal(t, ErrDatabaseIsUsing, err)
 	err = db.Close()
 	assert.Nil(t, err)
+	db2, err := Open(opts)
+	assert.Nil(t, err)
+	assert.NotNil(t, db2)
 
 }

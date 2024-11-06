@@ -97,6 +97,7 @@ func Open(options Options) (*DB, error) {
 		if err := db.loadIndexFromDataFile(); err != nil {
 			return nil, err
 		}
+
 		if db.options.MMapAtStartup {
 			err := db.resetIoType()
 			if err != nil {
@@ -403,12 +404,12 @@ func (db *DB) loadDataFile() error {
 	// 对文件 id 排序，从小到大加载数据文件
 	sort.Ints(fileIds)
 	db.fileIds = fileIds
-	ioType := fio.StandardFileIO
-	if db.options.MMapAtStartup {
-		ioType = fio.MemoryMap
-	}
 	// 遍历文件id，打开对应的数据文件
 	for i, fid := range fileIds {
+		ioType := fio.StandardFileIO
+		if db.options.MMapAtStartup {
+			ioType = fio.MemoryMap
+		}
 		dataFile, err := data.OpenDataFile(db.options.DirPath, uint32(fid), ioType)
 		if err != nil {
 			return err

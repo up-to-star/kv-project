@@ -215,7 +215,7 @@ func (db *DB) loadIndexFromHintFile() error {
 	hintFileName := filepath.Join(db.options.DirPath, data.HintFileName)
 
 	if _, err := os.Stat(hintFileName); os.IsNotExist(err) {
-		return err
+		return nil
 	}
 
 	// 打开 hint 索引文件

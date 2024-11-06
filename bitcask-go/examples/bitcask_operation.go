@@ -16,16 +16,30 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = db.Put([]byte("key2"), []byte("bitcask2"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.Put([]byte("key3"), []byte("bitcask3"))
+	if err != nil {
+		panic(err)
+	}
 
 	val, err := db.Get([]byte("key"))
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Printf("value: %s\n", val)
 
 	err = db.Delete([]byte("key"))
 	if err != nil {
 		panic(err)
 	}
+
+	val, err = db.Get([]byte("key2"))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("value: %s\n", val)
 }

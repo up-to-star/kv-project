@@ -2,8 +2,6 @@ module bitcask-go
 
 go 1.22.0
 
-toolchain go1.23.2
-
 require (
 	github.com/gofrs/flock v0.12.1
 	github.com/google/btree v1.1.3

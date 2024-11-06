@@ -32,7 +32,7 @@ var DefaultOptions = Options{
 	DataFileSize:  256 * 1024 * 1024,
 	SyncWrites:    false,
 	BytesPerSync:  0,
-	IndexType:     BPlusTree,
+	IndexType:     ART,
 	MMapAtStartup: true,
 }
 

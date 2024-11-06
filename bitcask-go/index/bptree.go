@@ -3,6 +3,7 @@ package index
 import (
 	"bitcask-go/data"
 	"go.etcd.io/bbolt"
+	"os"
 	"path/filepath"
 )
 
@@ -23,7 +24,7 @@ func (bpt *BPlusTree) Close() error {
 func NewBPlusTree(dirPath string, syncWrites bool) *BPlusTree {
 	ops := bbolt.DefaultOptions
 	ops.NoSync = !syncWrites
-	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), 0644, ops)
+	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), os.ModePerm, ops)
 	if err != nil {
 		panic("failed to open bptree: " + err.Error())
 	}
