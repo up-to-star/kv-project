@@ -15,9 +15,15 @@ func TestBPlusTree_Put(t *testing.T) {
 		_ = os.RemoveAll(path)
 	}()
 	tree := NewBPlusTree(path, false)
-	tree.Put([]byte("abc"), &data.LogRecordPos{Fid: 1, Offset: 1})
-	tree.Put([]byte("aac"), &data.LogRecordPos{Fid: 1, Offset: 2})
-	tree.Put([]byte("acd"), &data.LogRecordPos{Fid: 1, Offset: 3})
+	res := tree.Put([]byte("abc"), &data.LogRecordPos{Fid: 1, Offset: 1})
+	assert.Nil(t, res)
+	res = tree.Put([]byte("aac"), &data.LogRecordPos{Fid: 1, Offset: 2})
+	assert.Nil(t, res)
+	res = tree.Put([]byte("acd"), &data.LogRecordPos{Fid: 1, Offset: 3})
+	assert.Nil(t, res)
+
+	res = tree.Put([]byte("abc"), &data.LogRecordPos{Fid: 1, Offset: 4})
+	assert.Equal(t, &data.LogRecordPos{Fid: 1, Offset: 1}, res)
 
 }
 
@@ -48,13 +54,12 @@ func TestBPlusTree_Delete(t *testing.T) {
 	tree.Put([]byte("abc"), &data.LogRecordPos{Fid: 1, Offset: 1})
 	tree.Put([]byte("aac"), &data.LogRecordPos{Fid: 1, Offset: 2})
 	tree.Put([]byte("acd"), &data.LogRecordPos{Fid: 1, Offset: 3})
-	res := tree.Delete([]byte("not-exist"))
-	assert.False(t, res)
-	res = tree.Delete([]byte("abc"))
-	assert.True(t, res)
-
-	pos := tree.Get([]byte("abc"))
-	assert.Nil(t, pos)
+	res, ok := tree.Delete([]byte("not-exist"))
+	assert.False(t, ok)
+	assert.Nil(t, res)
+	res, ok = tree.Delete([]byte("abc"))
+	assert.True(t, ok)
+	assert.Equal(t, &data.LogRecordPos{Fid: 1, Offset: 1}, res)
 }
 
 func TestBPlusTree_Size(t *testing.T) {

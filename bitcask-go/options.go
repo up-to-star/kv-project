@@ -3,12 +3,13 @@ package bitcask_go
 import "os"
 
 type Options struct {
-	DirPath       string      // 数据库文件目录
-	DataFileSize  int64       // 数据文件的大小
-	SyncWrites    bool        // 每次写入是否持久化
-	BytesPerSync  uint        // 累计写到这个阈值，再持久化
-	IndexType     IndexerType // 索引类型
-	MMapAtStartup bool
+	DirPath            string      // 数据库文件目录
+	DataFileSize       int64       // 数据文件的大小
+	SyncWrites         bool        // 每次写入是否持久化
+	BytesPerSync       uint        // 累计写到这个阈值，再持久化
+	IndexType          IndexerType // 索引类型
+	MMapAtStartup      bool        // 启动时是否使用 mmap 加速
+	DataFileMergeRatio float32     // 数据文件合并的阈值
 }
 
 // IteratorOptions 索引迭代器配置项
@@ -28,12 +29,13 @@ const (
 )
 
 var DefaultOptions = Options{
-	DirPath:       os.TempDir(),
-	DataFileSize:  256 * 1024 * 1024,
-	SyncWrites:    false,
-	BytesPerSync:  0,
-	IndexType:     ART,
-	MMapAtStartup: true,
+	DirPath:            os.TempDir(),
+	DataFileSize:       256 * 1024 * 1024,
+	SyncWrites:         false,
+	BytesPerSync:       0,
+	IndexType:          Btree,
+	MMapAtStartup:      true,
+	DataFileMergeRatio: 0.5,
 }
 
 var DefaultIteratorOptions = IteratorOptions{

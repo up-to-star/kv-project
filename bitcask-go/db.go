@@ -4,6 +4,7 @@ import (
 	"bitcask-go/data"
 	"bitcask-go/fio"
 	"bitcask-go/index"
+	"bitcask-go/utils"
 	"errors"
 	"fmt"
 	"github.com/gofrs/flock"
@@ -34,6 +35,14 @@ type DB struct {
 	isInitial   bool                      // 标识第一次初始化数据目录
 	fileLock    *flock.Flock              // 文件锁
 	bytesWrite  uint                      // 累计写了多少个字节
+	reclaimSize int64                     // 有多少无效数据
+}
+
+type Stat struct {
+	KeyNum          uint
+	DataFileNum     uint
+	ReclaimableSize int64
+	DiskSize        int64
 }
 
 // Open 打开 bitcask 存储引擎实例
@@ -140,8 +149,8 @@ func (db *DB) Put(key []byte, value []byte) error {
 	if err != nil {
 		return err
 	}
-	if ok := db.index.Put(key, pos); !ok {
-		return ErrIndexUpdateFailed
+	if oldPos := db.index.Put(key, pos); oldPos != nil {
+		db.reclaimSize += int64(oldPos.Size)
 	}
 	return nil
 }
@@ -162,15 +171,19 @@ func (db *DB) Delete(key []byte) error {
 		Type: data.LogRecordTypeDeleted,
 	}
 
-	_, err := db.appendLogRecordWithLock(logRecord)
+	pos, err := db.appendLogRecordWithLock(logRecord)
 	if err != nil {
 		return nil
 	}
+	db.reclaimSize += int64(pos.Size)
 
 	// 从内存索引中将对应的key删除
-	ok := db.index.Delete(key)
+	oldPos, ok := db.index.Delete(key)
 	if !ok {
 		return ErrIndexUpdateFailed
+	}
+	if oldPos != nil {
+		db.reclaimSize += int64(oldPos.Size)
 	}
 	return nil
 }
@@ -251,6 +264,26 @@ func (db *DB) Sync() error {
 		return err
 	}
 	return nil
+}
+
+// Stat 返回数据库的相关信息
+func (db *DB) Stat() *Stat {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	var dataFiles = uint(len(db.oldFiles))
+	if db.activeFile != nil {
+		dataFiles++
+	}
+	dirSize, err := utils.DirSize(db.options.DirPath)
+	if err != nil {
+		panic("fail to get dir size" + err.Error())
+	}
+	return &Stat{
+		KeyNum:          uint(db.index.Size()),
+		DataFileNum:     dataFiles,
+		ReclaimableSize: db.reclaimSize,
+		DiskSize:        dirSize,
+	}
 }
 
 // ListKeys 获取数据库中所有的 key
@@ -360,7 +393,7 @@ func (db *DB) appendLogRecord(logRecord *data.LogRecord) (*data.LogRecordPos, er
 		}
 
 	}
-	pos := &data.LogRecordPos{Fid: db.activeFile.FileId, Offset: writeOff}
+	pos := &data.LogRecordPos{Fid: db.activeFile.FileId, Offset: writeOff, Size: uint32(size)}
 	return pos, nil
 }
 
@@ -443,14 +476,15 @@ func (db *DB) loadIndexFromDataFile() error {
 		nonMergeFileId = fid
 	}
 	updateIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
-		var ok bool
+		var oldPos *data.LogRecordPos
 		if typ == data.LogRecordTypeDeleted {
-			ok = db.index.Delete(key)
+			oldPos, _ = db.index.Delete(key)
+			db.reclaimSize += int64(pos.Size)
 		} else {
-			ok = db.index.Put(key, pos)
+			oldPos = db.index.Put(key, pos)
 		}
-		if !ok {
-			panic("failed to update index at startup!")
+		if oldPos != nil {
+			db.reclaimSize += int64(oldPos.Size)
 		}
 	}
 
@@ -480,7 +514,7 @@ func (db *DB) loadIndexFromDataFile() error {
 			}
 
 			// 构建内存索引，保存到内存索引中
-			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset}
+			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset, Size: uint32(size)}
 			realKey, seqNo := parseLogRecordKey(logRecord.Key)
 			if seqNo == nonTransactionSeqNo {
 				updateIndex(realKey, logRecord.Type, logRecordPos)
@@ -520,6 +554,10 @@ func checkOptions(options Options) error {
 
 	if options.DataFileSize <= 0 {
 		return errors.New("data file size must be positive")
+	}
+
+	if options.DataFileMergeRatio > 1.0 || options.DataFileMergeRatio < 0.0 {
+		return errors.New("data file merge ratio must be between 0.0 and 1.0")
 	}
 
 	return nil

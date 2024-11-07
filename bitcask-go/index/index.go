@@ -9,13 +9,13 @@ import (
 // Indexer 定义抽象索引接口，方便后续接入其他索引数据结构
 type Indexer interface {
 	// Put 向索引中存储数据对应的位置信息
-	Put(key []byte, pos *data.LogRecordPos) bool
+	Put(key []byte, pos *data.LogRecordPos) *data.LogRecordPos
 
 	// Get 获取索引中数据对应的位置信息
 	Get(key []byte) *data.LogRecordPos
 
 	// Delete 根据 key 删除对应的位置信息
-	Delete(key []byte) bool
+	Delete(key []byte) (*data.LogRecordPos, bool)
 
 	// Iterator 返回迭代器
 	Iterator(reverse bool) Iterator
