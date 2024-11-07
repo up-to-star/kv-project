@@ -602,3 +602,10 @@ func (db *DB) resetIoType() error {
 	}
 	return nil
 }
+
+// Backup 备份数据库
+func (db *DB) Backup(dir string) error {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	return utils.CopyDir(db.options.DirPath, dir, []string{fileFlockName})
+}
