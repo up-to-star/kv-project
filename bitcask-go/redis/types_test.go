@@ -108,3 +108,63 @@ func TestRedisDataStructure_HDel(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, ok)
 }
+
+func TestRedisDataStructure_SIsMember(t *testing.T) {
+	options := bitcask.DefaultOptions
+	options.DirPath, _ = os.MkdirTemp("", "TestRedisDataStructure_SIsMember")
+	rds, err := NewRedisDataStruct(options)
+	assert.Nil(t, err)
+
+	ok, err := rds.SAdd(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SAdd(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+	ok, err = rds.SAdd(utils.GetTestKey(1), []byte("value-2"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = rds.SIsMember(utils.GetTestKey(2), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+	ok, err = rds.SIsMember(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SIsMember(utils.GetTestKey(1), []byte("value-2"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SIsMember(utils.GetTestKey(1), []byte("value-3"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+}
+
+func TestRedisDataStructure_SRem(t *testing.T) {
+	options := bitcask.DefaultOptions
+	options.DirPath, _ = os.MkdirTemp("", "TestRedisDataStructure_SRem")
+	rds, err := NewRedisDataStruct(options)
+	assert.Nil(t, err)
+
+	ok, err := rds.SAdd(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SAdd(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+	ok, err = rds.SAdd(utils.GetTestKey(1), []byte("value-2"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+
+	ok, err = rds.SRem(utils.GetTestKey(2), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+	ok, err = rds.SRem(utils.GetTestKey(1), []byte("value-1"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SRem(utils.GetTestKey(1), []byte("value-2"))
+	assert.Nil(t, err)
+	assert.True(t, ok)
+	ok, err = rds.SRem(utils.GetTestKey(1), []byte("value-3"))
+	assert.Nil(t, err)
+	assert.False(t, ok)
+}
